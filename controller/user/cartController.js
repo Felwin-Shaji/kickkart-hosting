@@ -158,6 +158,10 @@ const cartQuantity = async (req, res) => {
         const { productId, selectedSize, quantity } = req.body;
         const userId = req.session.user;
 
+        if (quantity > 10) {
+            return res.status(401).json({ success: false, message: "maximum quantity is 10" })
+        }
+
         if (!userId) {
             return res.status(401).json({ success: false, message: "Please log in to update cart." });
         }
@@ -223,7 +227,7 @@ const cartQuantity = async (req, res) => {
 const remove = async (req, res) => {
     try {
         const userId = req.session.user;
-        const productId = req.params.id; 
+        const productId = req.params.id;
         const size = String(req.params.size);
 
         if (!userId || !productId || !size) {
@@ -385,11 +389,11 @@ const placeOrder = async (req, res) => {
         console.log("req.body", req.body);
 
         if (totalAmount < 2000) {
-            return res.status(400).json({ 
-                message: "Cash on Delivery (COD) is only available for orders above ₹2000. Please select a different payment method." 
+            return res.status(400).json({
+                message: "Cash on Delivery (COD) is only available for orders above ₹2000. Please select a different payment method."
             });
         }
-        
+
 
         const cart = await Cart.findOne({ user: userId }).populate('items.product');
         if (!cart || !cart.items || cart.items.length === 0) {
@@ -460,7 +464,7 @@ const placeOrder = async (req, res) => {
             coupenOffer: coupenOffer,
             totalAmount: totalAmount,
             totalregularPrice: totalregularPrice,
-            paymentStatus:"pending"
+            paymentStatus: "pending"
         };
 
         const order = await Order.create(orderData);
@@ -498,7 +502,7 @@ const razorpayCreatOrder = async (req, res) => {
     const { amount, currency, selectedAddress, paymentMethod, coupenCode, coupenOffer, totalregularPrice } = req.body;
     console.log("totalAmounttotalAmount", req.body)
     console.log("ccccccccccccccccccccccccccccccccccc")
-    if(!selectedAddress){
+    if (!selectedAddress) {
         return res.status(400).json({ message: 'Selected address not found' });
     }
     try {
@@ -565,7 +569,7 @@ const varifyPayment = async (req, res) => {
         // Update order status as failed & increment retry count
         await Order.findOneAndUpdate(
             { razorpayOrderId: razorpay_order_id },
-            { $set: { paymentStatus: "failed" }},
+            { $set: { paymentStatus: "failed" } },
             { new: true }
         );
 
@@ -597,10 +601,10 @@ const varifyPayment = async (req, res) => {
 
         const updatedOrder = await Order.findOneAndUpdate(
             { razorpayOrderId: razorpay_order_id },
-            { $set: { paymentStatus: paymentStatus === "completed" ? "completed" : "failed" } }, 
+            { $set: { paymentStatus: paymentStatus === "completed" ? "completed" : "failed" } },
             { new: true }
         );
-        
+
 
         console.log("Updated Order:", updatedOrder);
 
@@ -623,7 +627,7 @@ const varifyPayment = async (req, res) => {
         } else {
             await Order.findOneAndUpdate(
                 { razorpayOrderId: razorpay_order_id },
-              // Increment retry count on failure
+                // Increment retry count on failure
             );
         }
 
@@ -646,7 +650,7 @@ const varifyPayment = async (req, res) => {
 
 const retryPayment = async (req, res) => {
     const { orderId } = req.body;
-    
+
     try {
         const order = await Order.findById(orderId);
 
@@ -655,7 +659,7 @@ const retryPayment = async (req, res) => {
         }
 
         // Prevent infinite retries
-      
+
 
         // Create a new Razorpay order
         const razorpayOrder = await razorpayInstance.orders.create({
@@ -806,7 +810,7 @@ const walletOrderPayment = async (req, res) => {
             coupenOffer: coupenOffer,
             totalAmount: totalAmount,
             totalregularPrice: totalregularPrice,
-            paymentStatus:"completed"
+            paymentStatus: "completed"
         };
 
         const order = await Order.create(orderData);
@@ -843,7 +847,7 @@ const getOrderSuccessPage = async (req, res) => {
     res.render("order-complete-page")
 }
 
-const getOrderFailedPage = async (req,res) => {
+const getOrderFailedPage = async (req, res) => {
     res.render("order-failure-Page")
 }
 
@@ -851,7 +855,7 @@ const viewOrderDetails = async (req, res) => {
     try {
         const { orderId } = req.params;
 
-        
+
         const order = await Order.findById(orderId)
             .sort({ createdAt: -1 })
             .populate("items.productId", "productName productImage salePrice")
@@ -997,8 +1001,8 @@ const downloadInvoice = async (req, res) => {
 
         doc.pipe(res);
 
-        const primaryColor = "#007BFF"; 
-        const textColor = "#343A40"; 
+        const primaryColor = "#007BFF";
+        const textColor = "#343A40";
         const statusColors = {
             Pending: "#FFC107",
             Shipped: "#17A2B8",
@@ -1059,7 +1063,7 @@ const downloadInvoice = async (req, res) => {
 
             const statusColor = statusColors[item.status] || "#000000";
             doc.fillColor(statusColor).text(item.status, colX.status, positionY, { width: 70, align: "center" });
-            doc.fillColor(textColor); 
+            doc.fillColor(textColor);
 
             if (["Cancelled", "Returned"].includes(item.status)) {
                 totalRefundAmount += item.price;
